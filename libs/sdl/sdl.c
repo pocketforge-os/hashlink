@@ -108,7 +108,7 @@ HL_PRIM bool HL_NAME(init_once)() {
 	timeBeginPeriod(1);
 #	endif
 	// default GL parameters
-#ifdef HL_MOBILE
+#if defined(HL_MOBILE) || defined(HL_GLES)
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
@@ -125,6 +125,15 @@ HL_PRIM bool HL_NAME(init_once)() {
 }
 
 HL_PRIM void HL_NAME(gl_options)( int major, int minor, int depth, int stencil, int flags, int samples ) {
+#if defined(HL_GLES) && !defined(HL_MOBILE)
+	// sdl.hdll was built against GLES3 entry points: a desktop GL context
+	// would not match them. Turn a desktop request into ES 3.0.
+	if( !(flags & 8) ) {
+		flags = (flags & 1) | 8;
+		major = 3;
+		minor = 0;
+	}
+#endif
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, depth);

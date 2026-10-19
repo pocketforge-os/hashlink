@@ -3,6 +3,8 @@ if(WIN32)
 endif()
 find_package(SDL2 REQUIRED)
 
+option(WITH_SDL_GLES "Build sdl.hdll against OpenGL ES 3 instead of desktop OpenGL (Linux)." OFF)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
     add_library(sdl.hdll STATIC sdl.c gl.c)
 else()
@@ -47,6 +49,20 @@ if(APPLE OR UNIX)
             "-framework QuartzCore"
             "-framework UIKit"
             "-liconv"
+        )
+    elseif(WITH_SDL_GLES)
+        # Link OpenGL ES 3 (via libglvnd/Mesa) instead of desktop libGL and
+        # request ES contexts. SDL itself loads libEGL at runtime.
+        find_path(GLES3_INCLUDE_DIR GLES3/gl3.h REQUIRED)
+        find_library(GLESv2_LIBRARY NAMES GLESv2 REQUIRED)
+        target_compile_definitions(sdl.hdll PRIVATE HL_GLES)
+        target_include_directories(sdl.hdll
+            PRIVATE
+            ${GLES3_INCLUDE_DIR}
+        )
+        target_link_libraries(sdl.hdll
+            libhl
+            ${GLESv2_LIBRARY}
         )
     else()
         find_package(OpenGL REQUIRED)

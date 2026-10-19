@@ -27,6 +27,11 @@
 #	include <GLES3/gl3.h>
 #	include <GLES3/gl3ext.h>
 #	define HL_GLES
+#elif defined(HL_GLES)
+// Desktop Linux (or other SDL platform) built against OpenGL ES 3 instead of
+// desktop GL, e.g. for Mesa/Zink or embedded GPUs without a full GL driver.
+#	include <SDL2/SDL.h>
+#	include <GLES3/gl3.h>
 #else
 #	include <SDL2/SDL.h>
 #	include <GL/glu.h>
@@ -607,14 +612,14 @@ HL_PRIM bool HL_NAME(gl_query_result_available)( vdynamic *q ) {
 
 HL_PRIM double HL_NAME(gl_query_result)( vdynamic *q ) {
 	GLuint64 v = -1;
-#	if !defined(HL_MESA) && !defined(HL_MOBILE)
+#	ifndef HL_GLES
 	glGetQueryObjectui64v(q->v.i, GL_QUERY_RESULT, &v);
 #	endif
 	return (double)v;
 }
 
 HL_PRIM void HL_NAME(gl_query_counter)( vdynamic *q, int target ) {
-#	if !defined(HL_MESA) && !defined(HL_MOBILE)
+#	ifndef HL_GLES
 	glQueryCounter(q->v.i, target);
 #	endif
 }
