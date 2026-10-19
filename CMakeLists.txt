@@ -176,6 +176,16 @@ set_target_properties(libhl
     COMPILE_DEFINITIONS "_USRDLL;LIBHL_EXPORTS;HAVE_CONFIG_H;PCRE2_CODE_UNIT_WIDTH=16"
 )
 
+# The JIT VM (src/jit.c) only generates x86/x86_64 code. HL/C builds need only
+# libhl and the hdlls, so allow (and on other CPUs default to) skipping it.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64|i[3-6]86|x86)$")
+    set(HL_JIT_DEFAULT ON)
+else()
+    set(HL_JIT_DEFAULT OFF)
+endif()
+option(WITH_HL_JIT "Build the 'hl' JIT virtual machine (x86/x86_64 only)." ${HL_JIT_DEFAULT})
+
+if(WITH_HL_JIT)
 add_executable(hl
     src/code.c
     src/jit.c
@@ -190,15 +200,18 @@ if (UNIX AND NOT APPLE)
 endif()
 
 target_link_libraries(hl libhl)
+endif()
 
 if(WIN32)
     target_link_libraries(libhl ws2_32 user32)
-    target_link_libraries(hl user32)
+    if(WITH_HL_JIT)
+        target_link_libraries(hl user32)
+    endif()
 else()
     target_link_libraries(libhl m dl pthread)
 endif()
 
-if(BUILD_TESTING)
+if(BUILD_TESTING AND WITH_HL_JIT)
 
     find_program(
         HAXE_COMPILER
@@ -362,10 +375,15 @@ set(HDLL_DESTINATION
     ${CMAKE_INSTALL_LIBDIR}
 )
 
+if(WITH_HL_JIT)
+    set(HL_INSTALL_TARGETS hl libhl)
+else()
+    set(HL_INSTALL_TARGETS libhl)
+endif()
+
 install(
     TARGETS
-        hl
-        libhl
+        ${HL_INSTALL_TARGETS}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
