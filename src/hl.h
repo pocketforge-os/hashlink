@@ -286,6 +286,17 @@ C_FUNCTION_END
 C_FUNCTION_BEGIN
 HL_API void hl_debug_break( void );
 C_FUNCTION_END
+#elif defined(HL_LINUX) && (defined(__aarch64__) || defined(__arm__))
+// int3 is x86-only; these are the encodings clang's __builtin_debugtrap emits on ARM
+#	ifdef __aarch64__
+#	define hl_debug_break() \
+		if( hl_detect_debugger() ) \
+			__asm__ volatile("brk #0xf000")
+#	else
+#	define hl_debug_break() \
+		if( hl_detect_debugger() ) \
+			__asm__ volatile("udf #0xfe")
+#	endif
 #elif defined(HL_LINUX)
 #	ifdef HL_64
 #	define hl_debug_break() \
